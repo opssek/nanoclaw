@@ -394,6 +394,15 @@ function recoverPendingMessages(): void {
 }
 
 function ensureContainerSystemRunning(): void {
+  // Check if Docker is available (Linux/cross-platform)
+  try {
+    execSync('docker info', { stdio: 'pipe', timeout: 10000 });
+    logger.debug('Docker is available and running');
+    return;
+  } catch {
+    // Docker not available, try Apple Container (macOS)
+  }
+
   try {
     execSync('container system status', { stdio: 'pipe' });
     logger.debug('Apple Container system already running');
@@ -403,32 +412,29 @@ function ensureContainerSystemRunning(): void {
       execSync('container system start', { stdio: 'pipe', timeout: 30000 });
       logger.info('Apple Container system started');
     } catch (err) {
-      logger.error({ err }, 'Failed to start Apple Container system');
+      logger.error({ err }, 'Failed to start container runtime');
       console.error(
         '\n╔════════════════════════════════════════════════════════════════╗',
       );
       console.error(
-        '║  FATAL: Apple Container system failed to start                 ║',
+        '║  FATAL: No container runtime available                        ║',
       );
       console.error(
         '║                                                                ║',
       );
       console.error(
-        '║  Agents cannot run without Apple Container. To fix:           ║',
+        '║  Install Docker or Apple Container to run agents:             ║',
       );
       console.error(
-        '║  1. Install from: https://github.com/apple/container/releases ║',
+        '║  - Docker: https://docs.docker.com/get-docker/                ║',
       );
       console.error(
-        '║  2. Run: container system start                               ║',
-      );
-      console.error(
-        '║  3. Restart NanoClaw                                          ║',
+        '║  - Apple Container: https://github.com/apple/container        ║',
       );
       console.error(
         '╚════════════════════════════════════════════════════════════════╝\n',
       );
-      throw new Error('Apple Container system is required but failed to start');
+      throw new Error('No container runtime available');
     }
   }
 
